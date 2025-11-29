@@ -1,4 +1,5 @@
 import sys
+import os 
 
 built_in_commands = ['echo', 'exit', 'type']
 
@@ -18,7 +19,18 @@ def main():
                 if a in built_in_commands:
                     print(f'{a} is a shell builtin')
                 else:
-                    print(f'{a} not found')
+                    #Check in PATH
+                    PATH = os.environ.get("PATH")
+                    all_paths = PATH.split(os.pathsep)
+                    execute_allowed = False
+                    for path in all_paths:
+                        full_path = path + "/" + a
+                        if os.path.exists(full_path) and os.access(full_path, os.X_OK):
+                            print(f'{a} is {full_path}')
+                            execute_allowed = True
+                            break
+                    if not execute_allowed:
+                        print(f'{a} not found')
         elif(command == 'exit'):
             sys.exit()
         else:
