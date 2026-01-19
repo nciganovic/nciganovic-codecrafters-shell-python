@@ -2,7 +2,7 @@ import sys
 import os 
 import subprocess
 
-built_in_commands = ['echo', 'exit', 'type', 'pwd']
+built_in_commands = ['echo', 'exit', 'type', 'pwd', 'cd']
 
 def main():
     while True:
@@ -35,6 +35,20 @@ def main():
             sys.exit()
         elif(command == "pwd"):
             print(os.getcwd())
+        elif(command == "cd"):
+            from pathlib import Path
+            if len(args) == 0 or args[0] == '~':
+                os.chdir(Path.home())
+                continue
+            if len(args) > 2:
+                print("bash: cd: too many arguments")
+            
+            path = args[0]
+
+            try: 
+                os.chdir(path)
+            except:
+                print(f"cd: {path}: No such file or directory")
         else:
             #Check in PATH
             PATH = os.environ.get("PATH")
