@@ -2,6 +2,11 @@ import sys
 import os 
 import subprocess
 
+DOUBLE_QUOTES = '"'
+SINGLE_QUOTES = "'"
+SPACE = ' '
+EMPTY = ''
+
 built_in_commands = ['echo', 'exit', 'type', 'pwd', 'cd']
 
 def main():
@@ -13,7 +18,8 @@ def main():
         args:List[str] = elements[1:]
 
         if(command == 'echo'):
-            print(user_input[5:])
+            after_echo = user_input[5:].strip()
+            print(' '.join(parse_command_params(after_echo)))
         elif(command == 'type'):
             for a in args:
                 if a in built_in_commands:
@@ -50,6 +56,9 @@ def main():
             except:
                 print(f"cd: {path}: No such file or directory")
         else:
+            if command == "cat":
+                args = parse_command_params(user_input[4:].strip())
+
             #Check in PATH
             PATH = os.environ.get("PATH")
             all_paths = PATH.split(os.pathsep)
@@ -67,8 +76,32 @@ def main():
 
             print(f'{command}: command not found')
 
-            
+def parse_command_params(str_input):
+    total_args = []
+    current_arg = EMPTY
+    is_quote_started = False
 
+    for index, char in enumerate(str_input): 
+        if char == SINGLE_QUOTES:
+            is_quote_started = not is_quote_started
+        elif char == SPACE:
+            if is_quote_started:
+                current_arg += char
+            elif current_arg != EMPTY:
+                total_args.append(current_arg)
+                current_arg = EMPTY
+        else:
+            current_arg += char
+
+    total_args.append(current_arg)
+
+    return total_args 
+
+def is_quoted_str(text: str):
+    return text.startswith(SINGLE_QUOTES) and text.endswith(SINGLE_QUOTES)
+
+def remove_quotes(text: str):
+    return text[1:len(text) - 1]
 
 if __name__ == "__main__":
     main()
