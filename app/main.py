@@ -6,6 +6,7 @@ DOUBLE_QUOTES = '"'
 SINGLE_QUOTES = "'"
 SPACE = ' '
 EMPTY = ''
+BACKSLASH = '\\'
 
 built_in_commands = ['echo', 'exit', 'type', 'pwd', 'cd']
 
@@ -81,9 +82,18 @@ def parse_command_params(str_input):
     current_arg = EMPTY
     is_quote_started = False
     current_quote = None
+    is_escaping = False
 
     for index, char in enumerate(str_input): 
-        if is_any_quote(char) and (not is_quote_started or char == current_quote):            
+        if is_escaping:
+            current_arg += char
+            is_escaping = False
+            continue
+
+        if char == BACKSLASH:
+            is_escaping = True
+            continue
+        elif is_any_quote(char) and (not is_quote_started or char == current_quote):            
             current_quote = char
             is_quote_started = not is_quote_started
         elif char == SPACE:
