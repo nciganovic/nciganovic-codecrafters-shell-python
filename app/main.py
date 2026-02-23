@@ -90,7 +90,7 @@ def parse_command_params(str_input):
             is_escaping = False
             continue
 
-        if char == BACKSLASH:
+        if char == BACKSLASH and current_quote is not SINGLE_QUOTES:
             is_escaping = True
             continue
         elif is_any_quote(char) and (not is_quote_started or char == current_quote):            
