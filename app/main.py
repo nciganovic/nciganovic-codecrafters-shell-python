@@ -80,9 +80,11 @@ def parse_command_params(str_input):
     total_args = []
     current_arg = EMPTY
     is_quote_started = False
+    current_quote = None
 
     for index, char in enumerate(str_input): 
-        if char == SINGLE_QUOTES:
+        if is_any_quote(char) and (not is_quote_started or char == current_quote):            
+            current_quote = char
             is_quote_started = not is_quote_started
         elif char == SPACE:
             if is_quote_started:
@@ -97,11 +99,8 @@ def parse_command_params(str_input):
 
     return total_args 
 
-def is_quoted_str(text: str):
-    return text.startswith(SINGLE_QUOTES) and text.endswith(SINGLE_QUOTES)
-
-def remove_quotes(text: str):
-    return text[1:len(text) - 1]
+def is_any_quote(char: str)-> bool:
+    return char == SINGLE_QUOTES or char == DOUBLE_QUOTES
 
 if __name__ == "__main__":
     main()
