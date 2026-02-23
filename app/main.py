@@ -14,13 +14,12 @@ def main():
     while True:
         sys.stdout.write("$ ")
         user_input = input()
-        elements: List[str] = user_input.split(' ')
-        command = elements[0]
-        args:List[str] = elements[1:]
+        parsed_command_with_params = convert_input_to_arr(user_input.strip())
+        command = parsed_command_with_params[0]
+        args = parsed_command_with_params[1:]
 
         if(command == 'echo'):
-            after_echo = user_input[5:].strip()
-            print(' '.join(parse_command_params(after_echo)))
+            print(' '.join(args))
         elif(command == 'type'):
             for a in args:
                 if a in built_in_commands:
@@ -57,9 +56,6 @@ def main():
             except:
                 print(f"cd: {path}: No such file or directory")
         else:
-            if command == "cat":
-                args = parse_command_params(user_input[4:].strip())
-
             #Check in PATH
             PATH = os.environ.get("PATH")
             all_paths = PATH.split(os.pathsep)
@@ -77,7 +73,7 @@ def main():
 
             print(f'{command}: command not found')
 
-def parse_command_params(str_input):
+def convert_input_to_arr(str_input):
     total_args = []
     current_arg = EMPTY
     is_quote_started = False
