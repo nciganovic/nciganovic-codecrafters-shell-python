@@ -24,14 +24,16 @@ def main():
         parsed_command_with_params = convert_input_to_arr(user_input.strip())        
         file_to_write: str | None = get_file_to_write(parsed_command_with_params)
         std_type = StdType.stdout
+        append = False
         if file_to_write is not None:
+            append = parsed_command_with_params[-2] == '>>'
             std_type = get_std_type(parsed_command_with_params[-2])
             parsed_command_with_params = parsed_command_with_params[:-2]
         command = parsed_command_with_params[0]
 
         if(command == 'echo'):
             result = ' '.join(parsed_command_with_params[1:])
-            output_result(file_to_write, std_type, result, "")
+            output_result(file_to_write, std_type, result, "", append)
         elif(command == 'type'):
             args = parsed_command_with_params[1:]
             for a in args:
@@ -65,7 +67,7 @@ def main():
         else:
             if get_execute_path(command) is not None:
                 subprocess_result = subprocess.run(parsed_command_with_params, capture_output=True, text=True)
-                output_result(file_to_write, std_type, subprocess_result.stdout, subprocess_result.stderr)
+                output_result(file_to_write, std_type, subprocess_result.stdout, subprocess_result.stderr, append)
             else:        
                 print(f'{command}: command not found')
 
@@ -79,11 +81,11 @@ def get_execute_path(arg: str):
             return full_path
     return None
 
-def output_result(file_to_write: str | None, std_type: StdType, stdout: str, stderr: str):
+def output_result(file_to_write: str | None, std_type: StdType, stdout: str, stderr: str, append: bool):
     if file_to_write is not None:
         output_to_file = stdout if std_type == StdType.stdout else stderr
         output_to_console = stderr if std_type == StdType.stdout else stdout
-        write_to_file(file_to_write, output_to_file)
+        write_to_file(file_to_write, output_to_file, append)
         print_res(output_to_console)
     else:
         print_res(stdout)
@@ -99,7 +101,8 @@ def print_res(res: str):
 def is_writing_to_file(args: list[str]):
     return len(args) > 2 and args[-2] in STDOUT_CMDS
 
-def write_to_file(file_name: str, content: str):
+def write_to_file(file_name: str, content: str, append: bool):
+    mode = 'a+' if append else 'w+' 
     with open(file_name, "w+") as file:
         file.write(content)
 
