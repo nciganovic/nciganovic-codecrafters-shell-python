@@ -1,6 +1,7 @@
 import sys
 import os 
 import subprocess
+from enum import Enum
 
 DOUBLE_QUOTES = '"'
 SINGLE_QUOTES = "'"
@@ -8,9 +9,13 @@ SPACE = ' '
 EMPTY = ''
 BACKSLASH = '\\'
 NEW_LINE = '\n'
-STDOUT_CMDS = ['1>', '>']
+STDOUT_CMDS = ['>', '1>', '2>']
 
 built_in_commands = ['echo', 'exit', 'type', 'pwd', 'cd']
+
+class StdType(str, Enum):
+    stdout = 'stdout'
+    stderr = 'stderr'
 
 def main():
     while True:
@@ -18,14 +23,15 @@ def main():
         user_input = input()
         parsed_command_with_params = convert_input_to_arr(user_input.strip())        
         file_to_write: str | None = get_file_to_write(parsed_command_with_params)
+        std_type = StdType.stdout
         if file_to_write is not None:
+            std_type = get_std_type(parsed_command_with_params[-2])
             parsed_command_with_params = parsed_command_with_params[:-2]
         command = parsed_command_with_params[0]
 
-
         if(command == 'echo'):
             result = ' '.join(parsed_command_with_params[1:])
-            output_result(file_to_write, result)
+            output_result(file_to_write, std_type, result, "")
         elif(command == 'type'):
             args = parsed_command_with_params[1:]
             for a in args:
@@ -59,9 +65,7 @@ def main():
         else:
             if get_execute_path(command) is not None:
                 subprocess_result = subprocess.run(parsed_command_with_params, capture_output=True, text=True)
-                output_result(file_to_write, subprocess_result.stdout)
-                if subprocess_result.stderr != '':
-                    output_result(None, subprocess_result.stderr)
+                output_result(file_to_write, std_type, subprocess_result.stdout, subprocess_result.stderr)
             else:        
                 print(f'{command}: command not found')
 
@@ -75,14 +79,22 @@ def get_execute_path(arg: str):
             return full_path
     return None
 
-def output_result(file_to_write: str | None, cmd_result):
+def output_result(file_to_write: str | None, std_type: StdType, stdout: str, stderr: str):
     if file_to_write is not None:
-        write_to_file(file_to_write, cmd_result)
+        output_to_file = stdout if std_type == StdType.stdout else stderr
+        output_to_console = stderr if std_type == StdType.stdout else stdout
+        write_to_file(file_to_write, output_to_file)
+        print_res(output_to_console)
     else:
-        if cmd_result[-1] == NEW_LINE:
-            print(cmd_result, end="")
-        else: 
-            print(cmd_result)
+        print_res(stdout)
+
+def print_res(res: str):
+    if res == "":
+        return
+    if res[-1] == NEW_LINE:
+        print(res, end="")
+    else: 
+        print(res)
 
 def is_writing_to_file(args: list[str]):
     return len(args) > 2 and args[-2] in STDOUT_CMDS
@@ -95,6 +107,9 @@ def get_file_to_write(args: list[str])-> str | None:
     if is_writing_to_file(args):
         return args[-1]
     return None
+
+def get_std_type(type: str)-> StdType:
+    return StdType.stderr.value if type == '2>' else StdType.stdout.value
 
 def convert_input_to_arr(str_input):
     total_args = []
