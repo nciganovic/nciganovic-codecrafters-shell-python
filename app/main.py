@@ -9,7 +9,7 @@ SPACE = ' '
 EMPTY = ''
 BACKSLASH = '\\'
 NEW_LINE = '\n'
-STDOUT_CMDS = ['>', '1>', '2>']
+STDOUT_CMDS = ['>', '>>', '1>>', '1>', '2>']
 
 built_in_commands = ['echo', 'exit', 'type', 'pwd', 'cd']
 
@@ -26,7 +26,7 @@ def main():
         std_type = StdType.stdout
         append = False
         if file_to_write is not None:
-            append = parsed_command_with_params[-2] == '>>'
+            append = parsed_command_with_params[-2] == '>>' or parsed_command_with_params[-2] == '1>>'
             std_type = get_std_type(parsed_command_with_params[-2])
             parsed_command_with_params = parsed_command_with_params[:-2]
         command = parsed_command_with_params[0]
@@ -81,7 +81,13 @@ def get_execute_path(arg: str):
             return full_path
     return None
 
-def output_result(file_to_write: str | None, std_type: StdType, stdout: str, stderr: str, append: bool):
+def output_result(
+    file_to_write: str | None, 
+    std_type: StdType, 
+    stdout: str,
+    stderr: str,
+    append: bool
+    ):
     if file_to_write is not None:
         output_to_file = stdout if std_type == StdType.stdout else stderr
         output_to_console = stderr if std_type == StdType.stdout else stdout
@@ -103,7 +109,9 @@ def is_writing_to_file(args: list[str]):
 
 def write_to_file(file_name: str, content: str, append: bool):
     mode = 'a+' if append else 'w+' 
-    with open(file_name, "w+") as file:
+    with open(file_name, mode) as file:
+        if os.stat(file_name).st_size > 0:
+            file.write(NEW_LINE)
         file.write(content)
 
 def get_file_to_write(args: list[str])-> str | None:
