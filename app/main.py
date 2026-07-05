@@ -1,6 +1,7 @@
 import sys
 import os 
 import subprocess
+import readline
 from enum import Enum
 
 DOUBLE_QUOTES = '"'
@@ -16,6 +17,21 @@ built_in_commands = ['echo', 'exit', 'type', 'pwd', 'cd']
 class StdType(str, Enum):
     stdout = 'stdout'
     stderr = 'stderr'
+
+def autocomplete_command(text, state):
+    # Define custom options or logic
+    options = ["echo", "exit"] 
+    # Return the matching option for the current state
+    for option in options:
+        if option.startswith(text):
+            if not state:
+                return option + SPACE
+            state -= 1
+    return None
+
+readline.set_completer(autocomplete_command)
+readline.parse_and_bind("tab: complete")
+readline.set_completer_delims(' \t\n;')
 
 def main():
     while True:
