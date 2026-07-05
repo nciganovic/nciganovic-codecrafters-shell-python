@@ -9,7 +9,7 @@ SPACE = ' '
 EMPTY = ''
 BACKSLASH = '\\'
 NEW_LINE = '\n'
-STDOUT_CMDS = ['>', '>>', '1>>', '1>', '2>']
+STDOUT_CMDS = ['>', '>>', '1>>', '1>', '2>', '2>>']
 
 built_in_commands = ['echo', 'exit', 'type', 'pwd', 'cd']
 
@@ -26,7 +26,7 @@ def main():
         std_type = StdType.stdout
         append = False
         if file_to_write is not None:
-            append = parsed_command_with_params[-2] == '>>' or parsed_command_with_params[-2] == '1>>'
+            append = parsed_command_with_params[-2] == '>>' or parsed_command_with_params[-2] == '1>>' or parsed_command_with_params[-2] == '2>>'
             std_type = get_std_type(parsed_command_with_params[-2])
             parsed_command_with_params = parsed_command_with_params[:-2]
         command = parsed_command_with_params[0]
@@ -88,6 +88,9 @@ def output_result(
     stderr: str,
     append: bool
     ):
+    if len(stderr) > 0 and stderr[-1] == NEW_LINE:
+        stderr = stderr[:-1]
+
     if file_to_write is not None:
         output_to_file = stdout if std_type == StdType.stdout else stderr
         output_to_console = stderr if std_type == StdType.stdout else stdout
@@ -120,7 +123,7 @@ def get_file_to_write(args: list[str])-> str | None:
     return None
 
 def get_std_type(type: str)-> StdType:
-    return StdType.stderr.value if type == '2>' else StdType.stdout.value
+    return StdType.stderr.value if type == '2>' or type == '2>>' else StdType.stdout.value
 
 def convert_input_to_arr(str_input):
     total_args = []
