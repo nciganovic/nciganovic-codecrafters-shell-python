@@ -27,6 +27,11 @@ def autocomplete_command(text, state):
             if not state:
                 return option + SPACE
             state -= 1
+    word = get_autocomplete(text)        
+    if word is not None:
+        if not state:
+            return word + SPACE
+        state -= 1
     return None
 
 readline.set_completer(autocomplete_command)
@@ -86,6 +91,17 @@ def main():
                 output_result(file_to_write, std_type, subprocess_result.stdout, subprocess_result.stderr, append)
             else:        
                 print(f'{command}: command not found')
+
+
+def get_autocomplete(arg: str):
+    PATH = os.environ.get("PATH")
+    all_paths = PATH.split(os.pathsep)
+    for path in all_paths:
+        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        for file in files:
+            if file.startswith(arg):
+                return file
+    return None
 
 def get_execute_path(arg: str):
     #Check in PATH
