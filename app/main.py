@@ -1,5 +1,5 @@
 import sys
-import os 
+import os
 import subprocess
 import readline
 from enum import Enum
@@ -18,21 +18,44 @@ class StdType(str, Enum):
     stdout = 'stdout'
     stderr = 'stderr'
 
+is_autocomplete_state = False
+
 def autocomplete_command(text, state):
-    # Define custom options or logic
-    options = ["echo", "exit"] 
-    # Return the matching option for the current state
+    global is_autocomplete_state
+
+    # Only act on first call per TAB press (state 0)
+    if state != 0:
+        return None
+
+    # Check built-in commands first
+    options = ["echo", "exit"]
     for option in options:
         if option.startswith(text):
-            if not state:
-                return option + SPACE
-            state -= 1
-    word = get_autocomplete(text)        
-    if word is not None:
-        if not state:
-            return word + SPACE
-        state -= 1
-    return None
+            return option + SPACE
+
+    words = get_autocomplete(text)
+
+    if len(words) == 0:
+        return None
+
+    if len(words) == 1:
+        # Only one match — autocomplete immediately on any TAB press
+        is_autocomplete_state = False
+        return words[0] + SPACE
+
+    if not is_autocomplete_state:
+        # First TAB press: just ring bell
+        is_autocomplete_state = True
+        print('\07', end='', flush=True)
+        return None
+    else:
+        # Second TAB press: show items and restore prompt
+        is_autocomplete_state = False
+        output = '  '.join(sorted(words))
+        print('\n' + output)
+        sys.stdout.write("$ " + readline.get_line_buffer())
+        sys.stdout.flush()
+        return None
 
 readline.set_completer(autocomplete_command)
 readline.parse_and_bind("tab: complete")
@@ -42,7 +65,7 @@ def main():
     while True:
         sys.stdout.write("$ ")
         user_input = input()
-        parsed_command_with_params = convert_input_to_arr(user_input.strip())        
+        parsed_command_with_params = convert_input_to_arr(user_input.strip())
         file_to_write: str | None = get_file_to_write(parsed_command_with_params)
         std_type = StdType.stdout
         append = False
@@ -78,10 +101,10 @@ def main():
                 continue
             if len(args) > 2:
                 print("bash: cd: too many arguments")
-            
+
             path = args[0]
 
-            try: 
+            try:
                 os.chdir(path)
             except:
                 print(f"cd: {path}: No such file or directory")
@@ -89,19 +112,27 @@ def main():
             if get_execute_path(command) is not None:
                 subprocess_result = subprocess.run(parsed_command_with_params, capture_output=True, text=True)
                 output_result(file_to_write, std_type, subprocess_result.stdout, subprocess_result.stderr, append)
-            else:        
+            else:
                 print(f'{command}: command not found')
 
 
 def get_autocomplete(arg: str):
+    items = []
     PATH = os.environ.get("PATH")
+    if PATH is None:
+        return items
     all_paths = PATH.split(os.pathsep)
     for path in all_paths:
-        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        if not os.path.isdir(path):
+            continue
+        try:
+            files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        except (PermissionError, OSError):
+            continue
         for file in files:
             if file.startswith(arg):
-                return file
-    return None
+               items.append(file)
+    return items
 
 def get_execute_path(arg: str):
     #Check in PATH
@@ -114,8 +145,8 @@ def get_execute_path(arg: str):
     return None
 
 def output_result(
-    file_to_write: str | None, 
-    std_type: StdType, 
+    file_to_write: str | None,
+    std_type: StdType,
     stdout: str,
     stderr: str,
     append: bool
@@ -136,14 +167,14 @@ def print_res(res: str):
         return
     if res[-1] == NEW_LINE:
         print(res, end="")
-    else: 
+    else:
         print(res)
 
 def is_writing_to_file(args: list[str]):
     return len(args) > 2 and args[-2] in STDOUT_CMDS
 
 def write_to_file(file_name: str, content: str, append: bool):
-    mode = 'a+' if append else 'w+' 
+    mode = 'a+' if append else 'w+'
     with open(file_name, mode) as file:
         if os.stat(file_name).st_size > 0:
             file.write(NEW_LINE)
@@ -164,7 +195,7 @@ def convert_input_to_arr(str_input):
     current_quote = None
     is_escaping = False
 
-    for index, char in enumerate(str_input): 
+    for index, char in enumerate(str_input):
         if is_escaping:
             current_arg += char
             is_escaping = False
@@ -173,7 +204,7 @@ def convert_input_to_arr(str_input):
         if char == BACKSLASH and current_quote is not SINGLE_QUOTES:
             is_escaping = True
             continue
-        elif is_any_quote(char) and (not is_quote_started or char == current_quote):            
+        elif is_any_quote(char) and (not is_quote_started or char == current_quote):
             current_quote = char
             is_quote_started = not is_quote_started
         elif char == SPACE:
@@ -187,7 +218,7 @@ def convert_input_to_arr(str_input):
 
     total_args.append(current_arg)
 
-    return total_args 
+    return total_args
 
 def is_any_quote(char: str)-> bool:
     return char == SINGLE_QUOTES or char == DOUBLE_QUOTES
