@@ -1,65 +1,24 @@
-import sys
 import os
-import subprocess
 import readline
+import subprocess
+import sys
 from enum import Enum
 
-DOUBLE_QUOTES = '"'
-SINGLE_QUOTES = "'"
-SPACE = ' '
-EMPTY = ''
-BACKSLASH = '\\'
-NEW_LINE = '\n'
-STDOUT_CMDS = ['>', '>>', '1>>', '1>', '2>', '2>>']
+from .completer import complete_command
+from .consts import *
 
-built_in_commands = ['echo', 'exit', 'type', 'pwd', 'cd']
+built_in_commands = ["echo", "exit", "type", "pwd", "cd"]
+
 
 class StdType(str, Enum):
-    stdout = 'stdout'
-    stderr = 'stderr'
+    stdout = "stdout"
+    stderr = "stderr"
 
-is_autocomplete_state = False
 
-def autocomplete_command(text, state):
-    global is_autocomplete_state
-
-    # Only act on first call per TAB press (state 0)
-    if state != 0:
-        return None
-
-    # Check built-in commands first
-    options = ["echo", "exit"]
-    for option in options:
-        if option.startswith(text):
-            return option + SPACE
-
-    words = get_autocomplete(text)
-
-    if len(words) == 0:
-        return None
-
-    if len(words) == 1:
-        # Only one match — autocomplete immediately on any TAB press
-        is_autocomplete_state = False
-        return words[0] + SPACE
-
-    if not is_autocomplete_state:
-        # First TAB press: just ring bell
-        is_autocomplete_state = True
-        print('\07', end='', flush=True)
-        return None
-    else:
-        # Second TAB press: show items and restore prompt
-        is_autocomplete_state = False
-        output = '  '.join(sorted(words))
-        print('\n' + output)
-        sys.stdout.write("$ " + readline.get_line_buffer())
-        sys.stdout.flush()
-        return None
-
-readline.set_completer(autocomplete_command)
+readline.set_completer(complete_command)
 readline.parse_and_bind("tab: complete")
-readline.set_completer_delims(' \t\n;')
+readline.set_completer_delims(" \t\n;")
+
 
 def main():
     while True:
@@ -70,33 +29,34 @@ def main():
         std_type = StdType.stdout
         append = False
         if file_to_write is not None:
-            append = parsed_command_with_params[-2] == '>>' or parsed_command_with_params[-2] == '1>>' or parsed_command_with_params[-2] == '2>>'
+            append = parsed_command_with_params[-2] in STDOUT_APPEND_CMDS
             std_type = get_std_type(parsed_command_with_params[-2])
             parsed_command_with_params = parsed_command_with_params[:-2]
         command = parsed_command_with_params[0]
 
-        if(command == 'echo'):
-            result = ' '.join(parsed_command_with_params[1:])
+        if command == "echo":
+            result = " ".join(parsed_command_with_params[1:])
             output_result(file_to_write, std_type, result, "", append)
-        elif(command == 'type'):
+        elif command == "type":
             args = parsed_command_with_params[1:]
             for a in args:
                 if a in built_in_commands:
-                    print(f'{a} is a shell builtin')
+                    print(f"{a} is a shell builtin")
                 else:
                     full_path = get_execute_path(a)
                     if full_path is not None:
-                        print(f'{a} is {full_path}')
+                        print(f"{a} is {full_path}")
                     else:
-                        print(f'{a} not found')
-        elif(command == 'exit'):
+                        print(f"{a} not found")
+        elif command == "exit":
             sys.exit()
-        elif(command == "pwd"):
+        elif command == "pwd":
             print(os.getcwd())
-        elif(command == "cd"):
+        elif command == "cd":
             args = parsed_command_with_params[1:]
             from pathlib import Path
-            if len(args) == 0 or args[0] == '~':
+
+            if len(args) == 0 or args[0] == "~":
                 os.chdir(Path.home())
                 continue
             if len(args) > 2:
@@ -106,36 +66,29 @@ def main():
 
             try:
                 os.chdir(path)
-            except:
+            except FileNotFoundError:
                 print(f"cd: {path}: No such file or directory")
         else:
             if get_execute_path(command) is not None:
-                subprocess_result = subprocess.run(parsed_command_with_params, capture_output=True, text=True)
-                output_result(file_to_write, std_type, subprocess_result.stdout, subprocess_result.stderr, append)
+                subprocess_result = subprocess.run(
+                    parsed_command_with_params,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                output_result(
+                    file_to_write,
+                    std_type,
+                    subprocess_result.stdout,
+                    subprocess_result.stderr,
+                    append,
+                )
             else:
-                print(f'{command}: command not found')
+                print(f"{command}: command not found")
 
-
-def get_autocomplete(arg: str):
-    items = []
-    PATH = os.environ.get("PATH")
-    if PATH is None:
-        return items
-    all_paths = PATH.split(os.pathsep)
-    for path in all_paths:
-        if not os.path.isdir(path):
-            continue
-        try:
-            files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        except (PermissionError, OSError):
-            continue
-        for file in files:
-            if file.startswith(arg):
-               items.append(file)
-    return items
 
 def get_execute_path(arg: str):
-    #Check in PATH
+    # Check in PATH
     PATH = os.environ.get("PATH")
     all_paths = PATH.split(os.pathsep)
     for path in all_paths:
@@ -144,13 +97,10 @@ def get_execute_path(arg: str):
             return full_path
     return None
 
+
 def output_result(
-    file_to_write: str | None,
-    std_type: StdType,
-    stdout: str,
-    stderr: str,
-    append: bool
-    ):
+    file_to_write: str | None, std_type: StdType, stdout: str, stderr: str, append: bool
+):
     if len(stderr) > 0 and stderr[-1] == NEW_LINE:
         stderr = stderr[:-1]
 
@@ -162,6 +112,7 @@ def output_result(
     else:
         print_res(stdout)
 
+
 def print_res(res: str):
     if res == "":
         return
@@ -170,23 +121,30 @@ def print_res(res: str):
     else:
         print(res)
 
+
 def is_writing_to_file(args: list[str]):
     return len(args) > 2 and args[-2] in STDOUT_CMDS
 
+
 def write_to_file(file_name: str, content: str, append: bool):
-    mode = 'a+' if append else 'w+'
+    mode = APPEND_MODE if append else WRITE_MODE
     with open(file_name, mode) as file:
         if os.stat(file_name).st_size > 0:
             file.write(NEW_LINE)
         file.write(content)
 
-def get_file_to_write(args: list[str])-> str | None:
+
+def get_file_to_write(args: list[str]) -> str | None:
     if is_writing_to_file(args):
         return args[-1]
     return None
 
-def get_std_type(type: str)-> StdType:
-    return StdType.stderr.value if type == '2>' or type == '2>>' else StdType.stdout.value
+
+def get_std_type(type: str) -> StdType:
+    return (
+        StdType.stderr.value if type == "2>" or type == "2>>" else StdType.stdout.value
+    )
+
 
 def convert_input_to_arr(str_input):
     total_args = []
@@ -220,8 +178,10 @@ def convert_input_to_arr(str_input):
 
     return total_args
 
-def is_any_quote(char: str)-> bool:
+
+def is_any_quote(char: str) -> bool:
     return char == SINGLE_QUOTES or char == DOUBLE_QUOTES
+
 
 if __name__ == "__main__":
     main()
