@@ -23,22 +23,22 @@ readline.set_completer_delims(" \t\n;")
 def main():
     while True:
         sys.stdout.write("$ ")
-        user_input = input()
-        parsed_command_with_params = convert_input_to_arr(user_input.strip())
-        file_to_write: str | None = get_file_to_write(parsed_command_with_params)
+        user_input_str = input()
+        user_input_list: list[str] = convert_input_to_list(user_input_str.strip())
+        file_to_write: str | None = get_file_to_write(user_input_list)
         std_type = StdType.stdout
         append = False
         if file_to_write is not None:
-            append = parsed_command_with_params[-2] in STDOUT_APPEND_CMDS
-            std_type = get_std_type(parsed_command_with_params[-2])
-            parsed_command_with_params = parsed_command_with_params[:-2]
-        command = parsed_command_with_params[0]
+            append = user_input_list[-2] in STDOUT_APPEND_CMDS
+            std_type = get_std_type(user_input_list[-2])
+            user_input_list = user_input_list[:-2]
+        command = user_input_list[0]
 
         if command == "echo":
-            result = " ".join(parsed_command_with_params[1:])
+            result = " ".join(user_input_list[1:])
             output_result(file_to_write, std_type, result, "", append)
         elif command == "type":
-            args = parsed_command_with_params[1:]
+            args = user_input_list[1:]
             for a in args:
                 if a in built_in_commands:
                     print(f"{a} is a shell builtin")
@@ -53,7 +53,7 @@ def main():
         elif command == "pwd":
             print(os.getcwd())
         elif command == "cd":
-            args = parsed_command_with_params[1:]
+            args = user_input_list[1:]
             from pathlib import Path
 
             if len(args) == 0 or args[0] == "~":
@@ -71,7 +71,7 @@ def main():
         else:
             if get_execute_path(command) is not None:
                 subprocess_result = subprocess.run(
-                    parsed_command_with_params,
+                    user_input_list,
                     capture_output=True,
                     text=True,
                     check=False,
@@ -146,7 +146,7 @@ def get_std_type(type: str) -> StdType:
     )
 
 
-def convert_input_to_arr(str_input):
+def convert_input_to_list(str_input)-> list[str]:
     total_args = []
     current_arg = EMPTY
     is_quote_started = False
