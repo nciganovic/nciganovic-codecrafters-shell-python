@@ -25,6 +25,13 @@ class CommandExecutor:
         """Execute a command from a parsed input result."""
         handler = self._handlers.get(parsed.command)
         if handler:
+            full_args = [parsed.command] + parsed.args
+
+            commands = split_by(full_args, "|")
+            if len(commands) > 1:
+                self._run_pipeline(commands, parsed)
+                return
+
             handler(parsed)
         else:
             self._execute_external(parsed)
