@@ -23,14 +23,14 @@ class CommandExecutor:
 
     def execute(self, parsed: InputParseResult) -> None:
         """Execute a command from a parsed input result."""
-        handler = self._handlers.get(parsed.command)
-        if handler:
-            full_args = [parsed.command] + parsed.args
+        full_args = [parsed.command] + parsed.args
+        commands = split_by(full_args, "|")
+        if len(commands) > 1:
+            self._run_pipeline(commands, parsed)
+            return
 
-            commands = split_by(full_args, "|")
-            if len(commands) > 1:
-                self._run_pipeline(commands, parsed)
-                return
+        handler = self._handlers.get(parsed.command)        
+        if handler:
 
             handler(parsed)
         else:
@@ -73,11 +73,6 @@ class CommandExecutor:
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
-
-        commands = split_by(full_args, "|")
-        if len(commands) > 1:
-            self._run_pipeline(commands, p)
-            return
 
         if _get_execute_path(p.command) is not None:
             result = subprocess.run(
