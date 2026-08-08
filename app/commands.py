@@ -6,7 +6,7 @@ from pathlib import Path
 from .consts import APPEND_MODE, NEW_LINE, WRITE_MODE
 from .parser import InputParseResult
 
-BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd"}
+BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history"}
 
 
 class CommandExecutor:
@@ -19,6 +19,7 @@ class CommandExecutor:
             "pwd": self._cmd_pwd,
             "cd": self._cmd_cd,
             "exit": self._cmd_exit,
+            "history": self._cmd_history
         }
 
     def execute(self, parsed: InputParseResult) -> None:
@@ -70,6 +71,10 @@ class CommandExecutor:
 
     def _cmd_exit(self, p: InputParseResult):
         sys.exit()
+
+    def _cmd_history(self, p: InputParseResult):
+        pass
+        #print("history is a shell bultin")
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
