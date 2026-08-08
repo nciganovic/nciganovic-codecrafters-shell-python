@@ -30,10 +30,15 @@ def complete_command(text, state):
         is_complete_state = False
         return suggestions[0] + SPACE
 
+    suggest_by_len = sorted(suggestions, key=len)
+    if len(suggest_by_len[0]) != len(suggest_by_len[1]): 
+        return suggest_by_len[0]
+
     if not is_complete_state:
         # First TAB press: just ring bell
         is_complete_state = True
         print("\07", end="", flush=True)
+        sorted(suggestions, key=len)
         return None
     else:
         # Second TAB press: show items and restore prompt
