@@ -19,20 +19,22 @@ class CommandExecutor:
             "pwd": self._cmd_pwd,
             "cd": self._cmd_cd,
             "exit": self._cmd_exit,
-            "history": self._cmd_history
+            "history": self._cmd_history,
         }
+        self.history = []
 
     def execute(self, parsed: InputParseResult) -> None:
         """Execute a command from a parsed input result."""
+        self.history.append(parsed.command + " " + " ".join(parsed.args))
+
         full_args = [parsed.command] + parsed.args
         commands = split_by(full_args, "|")
         if len(commands) > 1:
             self._run_pipeline(commands, parsed)
             return
 
-        handler = self._handlers.get(parsed.command)        
+        handler = self._handlers.get(parsed.command)
         if handler:
-
             handler(parsed)
         else:
             self._execute_external(parsed)
@@ -73,8 +75,8 @@ class CommandExecutor:
         sys.exit()
 
     def _cmd_history(self, p: InputParseResult):
-        pass
-        #print("history is a shell bultin")
+        for i, item in enumerate(self.history):
+            print(str(i + 1) + " " + item)
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
