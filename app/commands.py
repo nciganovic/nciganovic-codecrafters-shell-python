@@ -75,8 +75,17 @@ class CommandExecutor:
         sys.exit()
 
     def _cmd_history(self, p: InputParseResult):
-        for i, item in enumerate(self.history):
-            print(str(i + 1) + " " + item)
+        if len(p.args) == 0:
+            for i, item in enumerate(self.history):
+                print(str(i + 1) + " " + item)
+            return
+
+        count = int(p.args[0])
+        start_index = len(self.history) - count
+        start_index = max(start_index, 0)
+        for i in range(start_index, len(self.history)):
+            print(str(i + 1) + " " + self.history[i])
+
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
