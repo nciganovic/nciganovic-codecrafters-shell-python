@@ -66,6 +66,12 @@ class CommandExecutor:
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
+
+        commands = split_by(full_args, "|")
+        if len(commands) > 1:
+            self._run_pipeline(commands, p)
+            return
+
         if _get_execute_path(p.command) is not None:
             result = subprocess.run(
                 full_args,
@@ -79,6 +85,64 @@ class CommandExecutor:
         else:
             print(f"{p.command}: command not found")
 
+    def _run_pipeline(self, commands: list[list[str]], p: InputParseResult):
+        """Run a pipeline of commands using fork/pipe."""
+        prev_read_fd = None
+        pids: list[int] = []
+
+        for i, cmd in enumerate(commands):
+            is_last = i == len(commands) - 1
+
+            if not is_last:
+                curr_read_fd, curr_write_fd = os.pipe()
+                pid = self._fork_child(cmd[0], cmd[1:], prev_read_fd, curr_write_fd)
+
+                if prev_read_fd is not None:
+                    os.close(prev_read_fd)
+
+                prev_read_fd = curr_read_fd
+                os.close(curr_write_fd)
+            else:
+                pid = self._fork_child(cmd[0], cmd[1:], prev_read_fd, None)
+                if prev_read_fd is not None:
+                    os.close(prev_read_fd)
+
+            pids.append(pid)
+
+        os.waitpid(pids[-1], 0)
+
+        for pid in pids[:-1]:
+            os.waitpid(pid, 0)
+
+    def _fork_child(
+        self, cmd: str, args: list[str], read_fd: int | None, write_fd: int | None
+    ) -> int:
+        """Fork and execute a command in the child process."""
+        pid = os.fork()
+
+        if pid == 0:
+            if write_fd is not None:
+                os.dup2(write_fd, 1)
+                os.close(write_fd)
+            if read_fd is not None:
+                os.dup2(read_fd, 0)
+                os.close(read_fd)
+
+            # Built-ins run in-process then exit
+            handler = self._handlers.get(cmd)
+            if handler:
+                handler(InputParseResult(cmd, args, None, "stdout", False))
+                os._exit(0)
+
+            # External command
+            try:
+                os.execvp(cmd, [cmd] + args)
+            except FileNotFoundError:
+                print(f"{cmd}: command not found")
+                os._exit(1)
+
+        return pid
+
 
 def _get_execute_path(arg: str) -> str | None:
     PATH = os.environ.get("PATH")
@@ -88,6 +152,19 @@ def _get_execute_path(arg: str) -> str | None:
         if os.path.exists(full_path) and os.access(full_path, os.X_OK):
             return full_path
     return None
+
+
+def split_by(items: list, sep) -> list[list]:
+    result = []
+    group = []
+    for item in items:
+        if item == sep:
+            result.append(group)
+            group = []
+        else:
+            group.append(item)
+    result.append(group)
+    return result
 
 
 def _output_result(file_to_write, std_type, stdout, stderr, append):
