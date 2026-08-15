@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from .consts import APPEND_MODE, NEW_LINE, WRITE_MODE
+from .history import History
 from .parser import InputParseResult
 
 BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history"}
@@ -12,7 +13,7 @@ BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history"}
 class CommandExecutor:
     """Dispatches shell commands to their handlers."""
 
-    def __init__(self):
+    def __init__(self, history: History):
         self._handlers = {
             "echo": self._cmd_echo,
             "type": self._cmd_type,
@@ -21,12 +22,10 @@ class CommandExecutor:
             "exit": self._cmd_exit,
             "history": self._cmd_history,
         }
-        self.history = []
+        self._history = history
 
     def execute(self, parsed: InputParseResult) -> None:
         """Execute a command from a parsed input result."""
-        self.history.append(parsed.command + " " + " ".join(parsed.args))
-
         full_args = [parsed.command] + parsed.args
         commands = split_by(full_args, "|")
         if len(commands) > 1:
@@ -76,16 +75,14 @@ class CommandExecutor:
 
     def _cmd_history(self, p: InputParseResult):
         if len(p.args) == 0:
-            for i, item in enumerate(self.history):
-                print(str(i + 1) + " " + item)
+            for i, item in enumerate(self._history):
+                print(f"{i + 1} {item}")
             return
 
         count = int(p.args[0])
-        start_index = len(self.history) - count
-        start_index = max(start_index, 0)
-        for i in range(start_index, len(self.history)):
-            print(str(i + 1) + " " + self.history[i])
-
+        start = max(len(self._history) - count, 0)
+        for i in range(start, len(self._history)):
+            print(f"{i + 1} {self._history[i]}")
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args

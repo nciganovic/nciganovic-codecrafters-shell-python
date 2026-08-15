@@ -8,40 +8,44 @@ is_complete_state = False
 
 
 def complete_command(text, state):
+    """readline completer with custom TAB behavior."""
     global is_complete_state
 
-    # Only act on first call per TAB press (state 0)
+    # readline calls this repeatedly with state=0,1,2,... for each TAB press.
+    # We only compute matches once per TAB press (state 0).
     if state != 0:
         return None
 
-    # Check built-in commands first
-    options = ["echo", "exit"]
-    for option in options:
+    # Built-in commands first
+    builtins = ["echo", "exit", "type", "pwd", "cd", "history"]
+    for option in builtins:
         if option.startswith(text):
             return option + SPACE
 
-    suggestions = get_suggestions(text)
+    suggestions = _get_suggestions(text)
 
-    if len(suggestions) == 0:
+    if not suggestions:
         return None
 
     if len(suggestions) == 1:
-        # Only one match — autocomplete immediately on any TAB press
         is_complete_state = False
         return suggestions[0] + SPACE
 
-    suggest_by_len = sorted(suggestions, key=len)
-    if len(suggest_by_len[0]) != len(suggest_by_len[1]): 
-        return suggest_by_len[0]
+    # Multiple matches: complete to the longest common prefix first.
+    common_prefix = os.path.commonprefix(suggestions)
+    if len(common_prefix) > len(text):
+        is_complete_state = False
+        return common_prefix
 
     if not is_complete_state:
-        # First TAB press: just ring bell
+        # First TAB press with multiple matches and no further common prefix:
+        # just ring the bell.
         is_complete_state = True
-        print("\07", end="", flush=True)
-        sorted(suggestions, key=len)
+        sys.stdout.write("\07")
+        sys.stdout.flush()
         return None
     else:
-        # Second TAB press: show items and restore prompt
+        # Second TAB press: show the list and redraw the prompt.
         is_complete_state = False
         output = "  ".join(sorted(suggestions))
         print("\n" + output)
@@ -50,13 +54,13 @@ def complete_command(text, state):
         return None
 
 
-def get_suggestions(arg: str):
+def _get_suggestions(arg: str):
     items = []
     PATH = os.environ.get("PATH")
     if PATH is None:
         return items
-    all_paths = PATH.split(os.pathsep)
-    for path in all_paths:
+
+    for path in PATH.split(os.pathsep):
         if not os.path.isdir(path):
             continue
         try:
@@ -66,6 +70,7 @@ def get_suggestions(arg: str):
         except (PermissionError, OSError):
             continue
         for file in files:
-            if file.startswith(arg):
+            if file.startswith(arg) and file not in items:
                 items.append(file)
+
     return items
