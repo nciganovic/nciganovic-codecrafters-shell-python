@@ -13,7 +13,7 @@ BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history"}
 class CommandExecutor:
     """Dispatches shell commands to their handlers."""
 
-    def __init__(self, history: History):
+    def __init__(self, history: History, readline):
         self._handlers = {
             "echo": self._cmd_echo,
             "type": self._cmd_type,
@@ -23,6 +23,7 @@ class CommandExecutor:
             "history": self._cmd_history,
         }
         self._history = history
+        self._readline = readline
 
     def execute(self, parsed: InputParseResult) -> None:
         """Execute a command from a parsed input result."""
@@ -77,6 +78,10 @@ class CommandExecutor:
         if len(p.args) == 0:
             for i, item in enumerate(self._history):
                 print(f"{i + 1} {item}")
+            return
+
+        if len(p.args) == 2 and p.args[0] == "-r":
+            self._readline.read_history_file(p.args[1])
             return
 
         count = int(p.args[0])
