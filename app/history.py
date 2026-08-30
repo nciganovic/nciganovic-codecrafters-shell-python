@@ -28,3 +28,7 @@ class History:
             self._pointer = len(self._items) - 1
             return ""
         return self._items[self._pointer]
+
+    def clear(self) -> None:
+        self._items.clear()
+        self._pointer = 0

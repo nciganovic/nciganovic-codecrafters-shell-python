@@ -79,6 +79,22 @@ class CommandExecutor:
                 print(f"{i + 1} {item}")
             return
 
+        if len(p.args) == 2 and p.args[0] == "-r":
+            file_path = p.args[1]
+            try:
+                with open(file_path, "r") as f:
+                    for line in f:
+                        line = line.rstrip("\n")
+                        if line:
+                            self._history.add_item(line)
+            except FileNotFoundError:
+                print(f"history: {file_path}: No such file or directory")
+            return
+
+        if len(p.args) == 1 and p.args[0] == "-c":
+            self._history.clear()
+            return
+
         count = int(p.args[0])
         start = max(len(self._history) - count, 0)
         for i in range(start, len(self._history)):

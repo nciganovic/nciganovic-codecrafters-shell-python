@@ -16,8 +16,9 @@ def main():
     executor = CommandExecutor(history)
 
     while True:
-        user_input_str = input("$ ")
-        if user_input_str is None:
+        try:
+            user_input_str = input("$ ")
+        except EOFError:
             break
         if not user_input_str:
             continue
