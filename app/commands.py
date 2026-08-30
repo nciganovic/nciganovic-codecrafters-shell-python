@@ -13,7 +13,7 @@ BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history"}
 class CommandExecutor:
     """Dispatches shell commands to their handlers."""
 
-    def __init__(self, history: History):
+    def __init__(self, history: History, readline):
         self._handlers = {
             "echo": self._cmd_echo,
             "type": self._cmd_type,
@@ -23,6 +23,7 @@ class CommandExecutor:
             "history": self._cmd_history,
         }
         self._history = history
+        self._readline = readline
 
     def execute(self, parsed: InputParseResult) -> None:
         """Execute a command from a parsed input result."""

@@ -13,7 +13,7 @@ readline.set_auto_history(True)
 
 def main():
     history = History()
-    executor = CommandExecutor(history)
+    executor = CommandExecutor(history, readline)
 
     while True:
         try:
