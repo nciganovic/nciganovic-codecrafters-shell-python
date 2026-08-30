@@ -81,15 +81,11 @@ class CommandExecutor:
             return
 
         if len(p.args) == 2 and p.args[0] == "-r":
-            file_path = p.args[1]
-            try:
-                with open(file_path, "r") as f:
-                    for line in f:
-                        line = line.rstrip("\n")
-                        if line:
-                            self._history.add_item(line)
-            except FileNotFoundError:
-                print(f"history: {file_path}: No such file or directory")
+            self._history.read_from_file(p.args[1])
+            return
+
+        if len(p.args) == 2 and p.args[0] == '-w':
+            self._history.write_to_file(p.args[1])
             return
 
         if len(p.args) == 1 and p.args[0] == "-c":
