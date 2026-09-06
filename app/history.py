@@ -7,6 +7,11 @@ class History:
         self._pointer = 0
         self._last_append_pos = 0 
 
+        env = os.environ.copy()
+        if "HISTFILE" in env:
+            self.read_from_file(os.environ["HISTFILE"])
+        
+
     def add_item(self, item: str) -> None:
         self._items.append(item)
         self._pointer = len(self._items) - 1
