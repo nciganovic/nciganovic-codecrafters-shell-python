@@ -85,7 +85,11 @@ class CommandExecutor:
             return
 
         if len(p.args) == 2 and p.args[0] == '-w':
-            self._history.write_to_file(p.args[1])
+            self._history.write_to_file(p.args[1], False)
+            return
+
+        if len(p.args) == 2 and p.args[0] == '-a':
+            self._history.write_to_file(p.args[1], True)
             return
 
         if len(p.args) == 1 and p.args[0] == "-c":

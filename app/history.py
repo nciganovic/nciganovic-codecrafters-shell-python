@@ -1,10 +1,11 @@
 import os
-from .consts import WRITE_MODE
+from .consts import WRITE_MODE, APPEND_MODE, NEW_LINE
 
 class History:
     def __init__(self):
         self._items = []
         self._pointer = 0
+        self._last_append_pos = 0 
 
     def add_item(self, item: str) -> None:
         self._items.append(item)
@@ -46,8 +47,10 @@ class History:
         except FileNotFoundError:
             print(f"history: {file_path}: No such file or directory")
 
-    def write_to_file(self, file_name):
-        with open(file_name, WRITE_MODE) as file:
-            if os.stat(file_name).st_size > 0:
-                file.write(NEW_LINE)
-            file.write('\n'.join(self._items) + '\n')
+    def write_to_file(self, file_name: str, is_append: bool):
+        mode = APPEND_MODE if is_append else WRITE_MODE
+        items = self._items if mode is WRITE_MODE else self._items[self._last_append_pos:]
+
+        self._last_append_pos = len(self._items)
+        with open(file_name, mode) as file:
+            file.write('\n'.join(items) + '\n')
