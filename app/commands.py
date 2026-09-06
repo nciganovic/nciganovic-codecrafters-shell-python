@@ -72,6 +72,7 @@ class CommandExecutor:
             print(f"cd: {path}: No such file or directory")
 
     def _cmd_exit(self, p: InputParseResult):
+        self._history.write_to_env_file()
         sys.exit()
 
     def _cmd_history(self, p: InputParseResult):
