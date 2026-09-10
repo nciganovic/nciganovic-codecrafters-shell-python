@@ -1,6 +1,7 @@
 import os
 import readline
 import sys
+import shlex
 
 from .consts import SPACE
 
@@ -11,50 +12,68 @@ def complete_command(text, state):
     """readline completer with custom TAB behavior."""
     global is_complete_state
 
-    # readline calls this repeatedly with state=0,1,2,... for each TAB press.
-    # We only compute matches once per TAB press (state 0).
     if state != 0:
         return None
 
-    # Built-in commands first
-    builtins = ["echo", "exit", "type", "pwd", "cd", "history"]
-    for option in builtins:
-        if option.startswith(text):
-            return option + SPACE
+    full_line = readline.get_line_buffer()                                                                                                                                                 
+    begidx = readline.get_begidx()                                                                                                                                                                                    
+    line_before = full_line[:begidx]                                                                                                                                                       
+                                                                                                                
+    try:                                                                                                                                                                                   
+        args = shlex.split(line_before, posix=True)                                                                                                                                        
+    except ValueError:                                                                                                                                                                     
+        args = line_before.strip().split()                                                                                                                                                 
+                                                                                                                                                                                              
+    arg_len = len(args)
 
-    suggestions = _get_suggestions(text)
+    if arg_len == 0:
+        builtins = ["echo", "exit", "type", "pwd", "cd", "history"]
+        for option in builtins:
+            if option.startswith(text):
+                return option + SPACE
 
-    if not suggestions:
-        return None
+        suggestions = _get_suggestions(text)
 
-    if len(suggestions) == 1:
-        is_complete_state = False
-        return suggestions[0] + SPACE
+        if not suggestions:
+            return None
 
-    # Multiple matches: complete to the longest common prefix first.
-    common_prefix = os.path.commonprefix(suggestions)
-    if len(common_prefix) > len(text):
-        is_complete_state = False
-        return common_prefix
+        if len(suggestions) == 1:
+            is_complete_state = False
+            return suggestions[0] + SPACE
 
-    if not is_complete_state:
-        # First TAB press with multiple matches and no further common prefix:
-        # just ring the bell.
-        is_complete_state = True
-        sys.stdout.write("\07")
-        sys.stdout.flush()
-        return None
+        common_prefix = os.path.commonprefix(suggestions)
+        if len(common_prefix) > len(text):
+            is_complete_state = False
+            return common_prefix
+
+        if not is_complete_state:
+            is_complete_state = True
+            sys.stdout.write("\07")
+            sys.stdout.flush()
+            return None
+        else:
+            is_complete_state = False
+            output = "  ".join(sorted(suggestions))
+            print("\n" + output)
+            sys.stdout.write("$ " + readline.get_line_buffer())
+            sys.stdout.flush()
+            return None
     else:
-        # Second TAB press: show the list and redraw the prompt.
-        is_complete_state = False
-        output = "  ".join(sorted(suggestions))
-        print("\n" + output)
-        sys.stdout.write("$ " + readline.get_line_buffer())
-        sys.stdout.flush()
-        return None
+        files = _get_file_suggestion(text)
+        if len(files) > 0:
+            return files[0] + SPACE
 
+def _get_file_suggestion(text: str) -> list[str]:
+    path = os.getcwd()
+    suggestions = []
+    
+    for f in os.listdir(path):
+        if f.startswith(text):
+            suggestions.append(f)
 
-def _get_suggestions(arg: str):
+    return suggestions
+
+def _get_suggestions(arg: str) -> list[str]:
     items = []
     PATH = os.environ.get("PATH")
     if PATH is None:
