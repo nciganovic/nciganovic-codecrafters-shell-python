@@ -62,6 +62,8 @@ def complete_command(text, state):
         files = _get_file_suggestion(text)
         if len(files) > 0:
             is_complete_state = True
+            if os.path.isdir(files[0]):
+                return files[0] + "/"
             return files[0] + SPACE
 
 def _get_file_suggestion(text: str) -> list[str]:
