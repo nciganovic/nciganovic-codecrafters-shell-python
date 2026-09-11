@@ -59,12 +59,25 @@ def complete_command(text, state):
             sys.stdout.flush()
             return None
     else:
-        files = _get_file_suggestion(text)
-        if len(files) > 0:
-            is_complete_state = True
-            if os.path.isdir(files[0]):
-                return files[0] + "/"
-            return files[0] + SPACE
+        suggestions = _get_file_suggestion(text)
+        if len(suggestions) == 1:
+            if os.path.isdir(suggestions[0]):
+                return suggestions[0]
+            return suggestions[0] + SPACE
+        else: 
+            if not is_complete_state:
+                is_complete_state = True
+                sys.stdout.write("\07")
+                sys.stdout.flush()
+                return None
+            else:
+                is_complete_state = False
+                output = "  ".join(sorted(suggestions))
+                print("\n" + output)
+                sys.stdout.write("$ " + readline.get_line_buffer())
+                sys.stdout.flush()
+                return None
+
 
 def _get_file_suggestion(text: str) -> list[str]:
     original_path = os.getcwd()
@@ -80,6 +93,8 @@ def _get_file_suggestion(text: str) -> list[str]:
         full_suggest = f if extra_path == '' else  extra_path + '/' + f
          
         if f.startswith(text) or text == '':
+            if os.path.isdir(original_path + '/' + full_suggest):
+                full_suggest += '/'
             suggestions.append(full_suggest)
 
     return suggestions
