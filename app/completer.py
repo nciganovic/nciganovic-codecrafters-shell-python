@@ -61,15 +61,24 @@ def complete_command(text, state):
     else:
         files = _get_file_suggestion(text)
         if len(files) > 0:
+            is_complete_state = True
             return files[0] + SPACE
 
 def _get_file_suggestion(text: str) -> list[str]:
-    path = os.getcwd()
+    original_path = os.getcwd()
     suggestions = []
-    
-    for f in os.listdir(path):
-        if f.startswith(text):
-            suggestions.append(f)
+    extra_path = ''
+     
+    if '/' in text:
+        text_list = text.split('/')
+        extra_path = '/'.join(text_list[:-1])
+        text = text_list[-1]
+
+    for f in os.listdir(original_path + "/" + extra_path):
+        full_suggest = f if extra_path == '' else  extra_path + '/' + f
+         
+        if f.startswith(text) or text == '':
+            suggestions.append(full_suggest)
 
     return suggestions
 
