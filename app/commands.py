@@ -23,7 +23,7 @@ class CommandExecutor:
             "exit": self._cmd_exit,
             "history": self._cmd_history,
             "jobs": self._cmd_jobs,
-            "complete": self._cmd_complete
+            "complete": self._cmd_complete,
         }
         self._history = history
         self._jobs = jobs
@@ -89,11 +89,11 @@ class CommandExecutor:
             self._history.read_from_file(p.args[1])
             return
 
-        if len(p.args) == 2 and p.args[0] == '-w':
+        if len(p.args) == 2 and p.args[0] == "-w":
             self._history.write_to_file(p.args[1], False)
             return
 
-        if len(p.args) == 2 and p.args[0] == '-a':
+        if len(p.args) == 2 and p.args[0] == "-a":
             self._history.write_to_file(p.args[1], True)
             return
 
@@ -110,13 +110,14 @@ class CommandExecutor:
         self._jobs.list_jobs()
 
     def _cmd_complete(self, p: InputParseResult):
-        pass
+        if len(p.args) == 2 and p.args[0] == "-p":
+            print(f"complete: {p.args[1]}: no completion specification")
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
 
         if self._get_execute_path(p.command) is not None:
-            if p.args[-1] == '&':
+            if p.args[-1] == "&":
                 self._jobs.run_job(full_args[:-1])
                 return
             result = subprocess.run(
@@ -189,7 +190,6 @@ class CommandExecutor:
 
         return pid
 
-
     def _get_execute_path(self, arg: str) -> str | None:
         PATH = os.environ.get("PATH")
         all_paths = PATH.split(os.pathsep)
@@ -198,7 +198,6 @@ class CommandExecutor:
             if os.path.exists(full_path) and os.access(full_path, os.X_OK):
                 return full_path
         return None
-
 
     def _split_by(self, items: list, sep) -> list[list]:
         result = []
@@ -211,7 +210,6 @@ class CommandExecutor:
                 group.append(item)
         result.append(group)
         return result
-
 
     def _output_result(self, file_to_write, std_type, stdout, stderr, append):
         if len(stderr) > 0 and stderr[-1] == NEW_LINE:
@@ -227,8 +225,6 @@ class CommandExecutor:
 
         self._jobs.list_jobs(only_done=True)
 
-
-
     def _print_res(self, res: str):
         if res == "":
             return
@@ -236,7 +232,6 @@ class CommandExecutor:
             print(res, end="")
         else:
             print(res)
-
 
     def _write_to_file(self, file_name: str, content: str, append: bool):
         mode = APPEND_MODE if append else WRITE_MODE
