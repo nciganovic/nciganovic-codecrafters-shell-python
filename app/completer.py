@@ -60,11 +60,17 @@ def complete_command(text, state):
             return None
     else:
         suggestions = _get_file_suggestion(text)
+        
         if len(suggestions) == 1:
             if os.path.isdir(suggestions[0]):
                 return suggestions[0]
             return suggestions[0] + SPACE
         else: 
+            common_prefix = os.path.commonprefix(suggestions)
+            if len(common_prefix) > len(text):
+                is_complete_state = False
+                return common_prefix
+
             if not is_complete_state:
                 is_complete_state = True
                 sys.stdout.write("\07")
