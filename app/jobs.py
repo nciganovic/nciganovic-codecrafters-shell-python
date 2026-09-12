@@ -7,7 +7,7 @@ class Jobs:
 
     def run_job(self, args: list[str]) -> None:
         process = subprocess.Popen(args)
-        self.process_list.append((process, args + ["&"]))
+        self.process_list.append((process, args)) 
         print(f"[{len(self.process_list)}] {process.pid}")
 
     def list_jobs(self) -> None:
