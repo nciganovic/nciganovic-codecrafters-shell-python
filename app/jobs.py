@@ -13,7 +13,7 @@ class Jobs:
         self.process_list.append((position, process, args)) 
         print(f"[{len(self.process_list)}] {process.pid}")
 
-    def list_jobs(self) -> None:
+    def list_jobs(self, only_done: bool = False) -> None:
         output = ""
         keep_items = []
 
@@ -21,8 +21,6 @@ class Jobs:
             return
 
         for i, item in enumerate(self.process_list):
-            if i > 0:
-                output += "\n"
             (position, process, args) = item
             status = "Done" if process.poll() is not None else "Running"
             if status == "Running":
@@ -32,6 +30,13 @@ class Jobs:
                 sign = "+"
             elif len(self.process_list) - 2 == i:
                 sign = "-"
+
+            if only_done and status != "Done":
+                continue
+
+            if output != "":
+                output += '\n'
+
             output += (
                 "["
                 + str(position)

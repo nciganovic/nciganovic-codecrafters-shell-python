@@ -31,7 +31,7 @@ class CommandExecutor:
     def execute(self, parsed: InputParseResult) -> None:
         """Execute a command from a parsed input result."""
         full_args = [parsed.command] + parsed.args
-        commands = split_by(full_args, "|")
+        commands = self._split_by(full_args, "|")
         if len(commands) > 1:
             self._run_pipeline(commands, parsed)
             return
@@ -44,14 +44,14 @@ class CommandExecutor:
 
     def _cmd_echo(self, p: InputParseResult):
         result = " ".join(p.args)
-        _output_result(p.file_to_write, p.std_type, result, "", p.append)
+        self._output_result(p.file_to_write, p.std_type, result, "", p.append)
 
     def _cmd_type(self, p: InputParseResult):
         for name in p.args:
             if name in BUILTIN_COMMANDS:
                 print(f"{name} is a shell builtin")
             else:
-                full_path = _get_execute_path(name)
+                full_path = self._get_execute_path(name)
                 if full_path is not None:
                     print(f"{name} is {full_path}")
                 else:
@@ -111,7 +111,7 @@ class CommandExecutor:
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
 
-        if _get_execute_path(p.command) is not None:
+        if self._get_execute_path(p.command) is not None:
             if p.args[-1] == '&':
                 self._jobs.run_job(full_args[:-1])
                 return
@@ -121,7 +121,7 @@ class CommandExecutor:
                 text=True,
                 check=False,
             )
-            _output_result(
+            self._output_result(
                 p.file_to_write, p.std_type, result.stdout, result.stderr, p.append
             )
         else:
@@ -186,54 +186,57 @@ class CommandExecutor:
         return pid
 
 
-def _get_execute_path(arg: str) -> str | None:
-    PATH = os.environ.get("PATH")
-    all_paths = PATH.split(os.pathsep)
-    for path in all_paths:
-        full_path = path + "/" + arg
-        if os.path.exists(full_path) and os.access(full_path, os.X_OK):
-            return full_path
-    return None
+    def _get_execute_path(self, arg: str) -> str | None:
+        PATH = os.environ.get("PATH")
+        all_paths = PATH.split(os.pathsep)
+        for path in all_paths:
+            full_path = path + "/" + arg
+            if os.path.exists(full_path) and os.access(full_path, os.X_OK):
+                return full_path
+        return None
 
 
-def split_by(items: list, sep) -> list[list]:
-    result = []
-    group = []
-    for item in items:
-        if item == sep:
-            result.append(group)
-            group = []
+    def _split_by(self, items: list, sep) -> list[list]:
+        result = []
+        group = []
+        for item in items:
+            if item == sep:
+                result.append(group)
+                group = []
+            else:
+                group.append(item)
+        result.append(group)
+        return result
+
+
+    def _output_result(self, file_to_write, std_type, stdout, stderr, append):
+        if len(stderr) > 0 and stderr[-1] == NEW_LINE:
+            stderr = stderr[:-1]
+
+        if file_to_write is not None:
+            output_to_file = stdout if std_type == "stdout" else stderr
+            output_to_console = stderr if std_type == "stdout" else stdout
+            self._write_to_file(file_to_write, output_to_file, append)
+            self._print_res(output_to_console)
         else:
-            group.append(item)
-    result.append(group)
-    return result
+            self._print_res(stdout)
+
+        self._jobs.list_jobs(only_done=True)
 
 
-def _output_result(file_to_write, std_type, stdout, stderr, append):
-    if len(stderr) > 0 and stderr[-1] == NEW_LINE:
-        stderr = stderr[:-1]
 
-    if file_to_write is not None:
-        output_to_file = stdout if std_type == "stdout" else stderr
-        output_to_console = stderr if std_type == "stdout" else stdout
-        _write_to_file(file_to_write, output_to_file, append)
-        _print_res(output_to_console)
-    else:
-        _print_res(stdout)
+    def _print_res(self, res: str):
+        if res == "":
+            return
+        if res[-1] == NEW_LINE:
+            print(res, end="")
+        else:
+            print(res)
 
 
-def _print_res(res: str):
-    if res == "":
-        return
-    if res[-1] == NEW_LINE:
-        print(res, end="")
-    else:
-        print(res)
-
-
-def _write_to_file(file_name: str, content: str, append: bool):
-    mode = APPEND_MODE if append else WRITE_MODE
-    with open(file_name, mode) as file:
-        if os.stat(file_name).st_size > 0:
-            file.write(NEW_LINE)
-        file.write(content)
+    def _write_to_file(self, file_name: str, content: str, append: bool):
+        mode = APPEND_MODE if append else WRITE_MODE
+        with open(file_name, mode) as file:
+            if os.stat(file_name).st_size > 0:
+                file.write(NEW_LINE)
+            file.write(content)
