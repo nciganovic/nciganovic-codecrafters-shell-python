@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .consts import APPEND_MODE, NEW_LINE, WRITE_MODE
 from .history import History
+from .jobs import Jobs
 from .parser import InputParseResult
 
 BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs"}
@@ -13,7 +14,7 @@ BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs"}
 class CommandExecutor:
     """Dispatches shell commands to their handlers."""
 
-    def __init__(self, history: History, readline):
+    def __init__(self, history: History, readline, jobs: Jobs):
         self._handlers = {
             "echo": self._cmd_echo,
             "type": self._cmd_type,
@@ -24,6 +25,7 @@ class CommandExecutor:
             "jobs": self._cmd_jobs
         }
         self._history = history
+        self._jobs = jobs
         self._readline = readline
 
     def execute(self, parsed: InputParseResult) -> None:
@@ -104,15 +106,14 @@ class CommandExecutor:
             print(f"{i + 1} {self._history[i]}")
 
     def _cmd_jobs(self, p: InputParseResult):
-        pass
+        self._jobs.list_jobs()
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
 
         if _get_execute_path(p.command) is not None:
             if p.args[-1] == '&':
-                popen = subprocess.Popen(full_args[:-1])
-                print(f'[1] {popen.pid}')
+                self._jobs.run_job(full_args[:-1])
                 return
             result = subprocess.run(
                 full_args,

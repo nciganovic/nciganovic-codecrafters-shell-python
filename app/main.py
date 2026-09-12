@@ -3,6 +3,7 @@ import readline
 from .commands import CommandExecutor
 from .completer import complete_command
 from .history import History
+from .jobs import Jobs
 from .parser import InputParser
 
 readline.set_completer(complete_command)
@@ -13,7 +14,8 @@ readline.set_auto_history(True)
 
 def main():
     history = History()
-    executor = CommandExecutor(history, readline)
+    jobs = Jobs()
+    executor = CommandExecutor(history, readline, jobs)
 
     while True:
         try:
