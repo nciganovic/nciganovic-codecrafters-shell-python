@@ -7,7 +7,7 @@ from .consts import APPEND_MODE, NEW_LINE, WRITE_MODE
 from .history import History
 from .parser import InputParseResult
 
-BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history"}
+BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs"}
 
 
 class CommandExecutor:
@@ -21,6 +21,7 @@ class CommandExecutor:
             "cd": self._cmd_cd,
             "exit": self._cmd_exit,
             "history": self._cmd_history,
+            "jobs": self._cmd_jobs
         }
         self._history = history
         self._readline = readline
@@ -101,6 +102,9 @@ class CommandExecutor:
         start = max(len(self._history) - count, 0)
         for i in range(start, len(self._history)):
             print(f"{i + 1} {self._history[i]}")
+
+    def _cmd_jobs(self, p: InputParseResult):
+        pass
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
