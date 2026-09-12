@@ -110,6 +110,10 @@ class CommandExecutor:
         full_args = [p.command] + p.args
 
         if _get_execute_path(p.command) is not None:
+            if p.args[-1] == '&':
+                popen = subprocess.Popen(full_args[:-1])
+                print(f'[1] {popen.pid}')
+                return
             result = subprocess.run(
                 full_args,
                 capture_output=True,
