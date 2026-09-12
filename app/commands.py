@@ -8,7 +8,7 @@ from .history import History
 from .jobs import Jobs
 from .parser import InputParseResult
 
-BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs"}
+BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs", "complete"}
 
 
 class CommandExecutor:
@@ -22,7 +22,8 @@ class CommandExecutor:
             "cd": self._cmd_cd,
             "exit": self._cmd_exit,
             "history": self._cmd_history,
-            "jobs": self._cmd_jobs
+            "jobs": self._cmd_jobs,
+            "complete": self._cmd_complete
         }
         self._history = history
         self._jobs = jobs
@@ -107,6 +108,9 @@ class CommandExecutor:
 
     def _cmd_jobs(self, p: InputParseResult):
         self._jobs.list_jobs()
+
+    def _cmd_complete(self, p: InputParseResult):
+        pass
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
