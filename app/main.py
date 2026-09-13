@@ -4,10 +4,9 @@ from .builtins.complete import Complete
 from .builtins.history import History
 from .builtins.jobs import Jobs
 from .commands import CommandExecutor
-from .completer import complete_command
+from .completer import make_completer
 from .parser import InputParser
 
-readline.set_completer(complete_command)
 readline.parse_and_bind("tab: complete")
 readline.set_completer_delims(" \t\n;")
 readline.set_auto_history(True)
@@ -17,6 +16,8 @@ def main():
     history = History()
     jobs = Jobs()
     complete = Complete()
+
+    readline.set_completer(make_completer(complete))
     executor = CommandExecutor(history, readline, jobs, complete)
 
     while True:

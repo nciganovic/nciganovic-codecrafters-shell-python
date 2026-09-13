@@ -1,6 +1,7 @@
 import os
 import readline
 import shlex
+import subprocess
 import sys
 
 from .consts import SPACE
@@ -8,64 +9,57 @@ from .consts import SPACE
 is_complete_state = False
 
 
-def complete_command(text, state):
-    """readline completer with custom TAB behavior."""
-    global is_complete_state
+def make_completer(complete):
+    """Create a readline completer that can run registered -C scripts."""
 
-    if state != 0:
-        return None
+    script_matches: list[str] = []
 
-    full_line = readline.get_line_buffer()
-    begidx = readline.get_begidx()
-    line_before = full_line[:begidx]
+    def complete_command(text, state):
+        global is_complete_state
+        nonlocal script_matches
 
-    try:
-        args = shlex.split(line_before, posix=True)
-    except ValueError:
-        args = line_before.strip().split()
-
-    arg_len = len(args)
-
-    if arg_len == 0:
-        builtins = ["echo", "exit", "type", "pwd", "cd", "history"]
-        for option in builtins:
-            if option.startswith(text):
-                return option + SPACE
-
-        suggestions = _get_suggestions(text)
-
-        if not suggestions:
+        if state != 0:
+            # readline asks for the Nth match (state = 1, 2, ...)
+            if state - 1 < len(script_matches):
+                return script_matches[state - 1] + SPACE
             return None
 
-        if len(suggestions) == 1:
-            is_complete_state = False
-            return suggestions[0] + SPACE
+        script_matches = []
 
-        common_prefix = os.path.commonprefix(suggestions)
-        if len(common_prefix) > len(text):
-            is_complete_state = False
-            return common_prefix
+        full_line = readline.get_line_buffer()
+        begidx = readline.get_begidx()
+        line_before = full_line[:begidx]
 
-        if not is_complete_state:
-            is_complete_state = True
-            sys.stdout.write("\07")
-            sys.stdout.flush()
-            return None
-        else:
-            is_complete_state = False
-            output = "  ".join(sorted(suggestions))
-            print("\n" + output)
-            sys.stdout.write("$ " + readline.get_line_buffer())
-            sys.stdout.flush()
-            return None
-    else:
-        suggestions = _get_file_suggestion(text)
+        try:
+            args = shlex.split(line_before, posix=True)
+        except ValueError:
+            args = line_before.strip().split()
 
-        if len(suggestions) == 1:
-            if os.path.isdir(suggestions[0]):
-                return suggestions[0]
-            return suggestions[0] + SPACE
-        else:
+        # Argument completion for a registered command 
+        if args:
+            script_path = complete.get_item(args[0])
+            if script_path is not None:
+                script_matches = _run_script(script_path, text)
+                if script_matches:
+                    return script_matches[0] + SPACE  
+                return None
+
+        if not args:
+            # Completing the command name itself
+            builtins = ["echo", "exit", "type", "pwd", "cd", "history", "jobs", "complete"]
+            for option in builtins:
+                if option.startswith(text):
+                    return option + SPACE
+
+            suggestions = _get_suggestions(text)
+
+            if not suggestions:
+                return None
+
+            if len(suggestions) == 1:
+                is_complete_state = False
+                return suggestions[0] + SPACE
+
             common_prefix = os.path.commonprefix(suggestions)
             if len(common_prefix) > len(text):
                 is_complete_state = False
@@ -83,6 +77,53 @@ def complete_command(text, state):
                 sys.stdout.write("$ " + readline.get_line_buffer())
                 sys.stdout.flush()
                 return None
+        else:
+            # Completing file paths as command arguments
+            suggestions = _get_file_suggestion(text)
+
+            if len(suggestions) == 1:
+                if os.path.isdir(suggestions[0]):
+                    return suggestions[0]
+                return suggestions[0] + SPACE
+            else:
+                common_prefix = os.path.commonprefix(suggestions)
+                if len(common_prefix) > len(text):
+                    is_complete_state = False
+                    return common_prefix
+
+                if not is_complete_state:
+                    is_complete_state = True
+                    sys.stdout.write("\07")
+                    sys.stdout.flush()
+                    return None
+                else:
+                    is_complete_state = False
+                    output = "  ".join(sorted(suggestions))
+                    print("\n" + output)
+                    sys.stdout.write("$ " + readline.get_line_buffer())
+                    sys.stdout.flush()
+                    return None
+
+    return complete_command
+
+
+def _run_script(script_path: str, text: str) -> list[str]:
+    try:
+        result = subprocess.run(
+            [script_path, text],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return []
+
+    matches = []
+    for line in result.stdout.splitlines():
+        line = line.rstrip("\n")
+        if line.startswith(text):
+            matches.append(line)
+    return matches
 
 
 def _get_file_suggestion(text: str) -> list[str]:
