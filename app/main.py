@@ -1,9 +1,10 @@
 import readline
 
+from .builtins.complete import Complete
+from .builtins.history import History
+from .builtins.jobs import Jobs
 from .commands import CommandExecutor
 from .completer import complete_command
-from .history import History
-from .jobs import Jobs
 from .parser import InputParser
 
 readline.set_completer(complete_command)
@@ -15,7 +16,8 @@ readline.set_auto_history(True)
 def main():
     history = History()
     jobs = Jobs()
-    executor = CommandExecutor(history, readline, jobs)
+    complete = Complete()
+    executor = CommandExecutor(history, readline, jobs, complete)
 
     while True:
         try:

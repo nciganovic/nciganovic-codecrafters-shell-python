@@ -1,5 +1,7 @@
 import os
-from .consts import WRITE_MODE, APPEND_MODE, NEW_LINE
+
+from ..consts import APPEND_MODE, WRITE_MODE
+
 
 class History:
     def __init__(self):

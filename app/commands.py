@@ -3,9 +3,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .builtins.complete import Complete
+from .builtins.history import History
+from .builtins.jobs import Jobs
 from .consts import APPEND_MODE, NEW_LINE, WRITE_MODE
-from .history import History
-from .jobs import Jobs
 from .parser import InputParseResult
 
 BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs", "complete"}
@@ -14,7 +15,7 @@ BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs", "com
 class CommandExecutor:
     """Dispatches shell commands to their handlers."""
 
-    def __init__(self, history: History, readline, jobs: Jobs):
+    def __init__(self, history: History, readline, jobs: Jobs, complete: Complete):
         self._handlers = {
             "echo": self._cmd_echo,
             "type": self._cmd_type,
@@ -28,6 +29,7 @@ class CommandExecutor:
         self._history = history
         self._jobs = jobs
         self._readline = readline
+        self._complete = complete
 
     def execute(self, parsed: InputParseResult) -> None:
         """Execute a command from a parsed input result."""
@@ -111,7 +113,14 @@ class CommandExecutor:
 
     def _cmd_complete(self, p: InputParseResult):
         if len(p.args) == 2 and p.args[0] == "-p":
-            print(f"complete: {p.args[1]}: no completion specification")
+            item = self._complete.get_item(p.args[1])
+            if item is not None:
+                print(f"complete -C '{item}' {p.args[1]}")
+            else:
+                print(f"complete: {p.args[1]}: no completion specification")
+
+        if len(p.args) == 3 and p.args[0] == '-C':
+            self._complete.add_item(p.args[1], p.args[2])
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
