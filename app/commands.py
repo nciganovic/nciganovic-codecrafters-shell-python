@@ -112,12 +112,16 @@ class CommandExecutor:
         self._jobs.list_jobs()
 
     def _cmd_complete(self, p: InputParseResult):
-        if len(p.args) == 2 and p.args[0] == "-p":
+        if len(p.args) == 2:
             item = self._complete.get_item(p.args[1])
-            if item is not None:
-                print(f"complete -C '{item}' {p.args[1]}")
-            else:
-                print(f"complete: {p.args[1]}: no completion specification")
+
+            if p.args[0] == "-p":
+                if item is not None:
+                    print(f"complete -C '{item}' {p.args[1]}")
+                else:
+                    print(f"complete: {p.args[1]}: no completion specification")
+            elif p.args[0] == '-r':
+                self._complete.remove_item(p.args[1])
 
         if len(p.args) == 3 and p.args[0] == '-C':
             self._complete.add_item(p.args[1], p.args[2])
