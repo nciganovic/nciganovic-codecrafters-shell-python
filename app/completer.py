@@ -39,7 +39,8 @@ def make_completer(complete):
         if args:
             script_path = complete.get_item(args[0])
             if script_path is not None:
-                script_matches = _run_script(script_path, text)
+                prev = args[-1] if len(args) > 1 else ""
+                script_matches = _run_script(script_path, args[0], text, prev) 
                 if script_matches:
                     return script_matches[0] + SPACE  
                 return None
@@ -107,10 +108,10 @@ def make_completer(complete):
     return complete_command
 
 
-def _run_script(script_path: str, text: str) -> list[str]:
+def _run_script(script_path: str, command: str, current_arg: str, prev_arg: str) -> list[str]:
     try:
         result = subprocess.run(
-            [script_path, text],
+            [script_path, command, current_arg, prev_arg],
             capture_output=True,
             text=True,
             check=False,
@@ -121,7 +122,7 @@ def _run_script(script_path: str, text: str) -> list[str]:
     matches = []
     for line in result.stdout.splitlines():
         line = line.rstrip("\n")
-        if line.startswith(text):
+        if line.startswith(current_arg):
             matches.append(line)
     return matches
 
