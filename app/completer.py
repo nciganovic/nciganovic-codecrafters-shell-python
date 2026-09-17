@@ -39,7 +39,7 @@ def make_completer(complete):
         if args:
             script_path = complete.get_item(args[0])
             if script_path is not None:
-                prev = args[-1] if len(args) > 1 else ""
+                prev = args[-1] if len(args) > 1 else args[0]
                 script_matches = _run_script(script_path, args[0], text, prev, full_line) 
                 if script_matches:
                     return script_matches[0] + SPACE  
