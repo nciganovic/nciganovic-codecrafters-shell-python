@@ -40,7 +40,7 @@ def make_completer(complete):
             script_path = complete.get_item(args[0])
             if script_path is not None:
                 prev = args[-1] if len(args) > 1 else ""
-                script_matches = _run_script(script_path, args[0], text, prev) 
+                script_matches = _run_script(script_path, args[0], text, prev, full_line) 
                 if script_matches:
                     return script_matches[0] + SPACE  
                 return None
@@ -108,13 +108,18 @@ def make_completer(complete):
     return complete_command
 
 
-def _run_script(script_path: str, command: str, current_arg: str, prev_arg: str) -> list[str]:
+def _run_script(script_path: str, command: str, current_arg: str, prev_arg: str, full_line: str) -> list[str]:
     try:
+        my_env = os.environ.copy()
+        my_env["COMP_LINE"] = full_line
+        my_env["COMP_POINT"] = str(len(full_line))
+
         result = subprocess.run(
             [script_path, command, current_arg, prev_arg],
             capture_output=True,
             text=True,
             check=False,
+            env=my_env
         )
     except OSError:
         return []
