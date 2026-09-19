@@ -128,7 +128,9 @@ class CommandExecutor:
             self._complete.add_item(p.args[1], p.args[2])
 
     def _cmd_declare(self, p: InputParseResult):
-        pass
+        if len(p.args) == 2 and p.args[0] == '-p':
+            print(f"declare: {p.args[1]}: not found")
+
 
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
