@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from .builtins.complete import Complete
+from .builtins.declare import Declare
 from .builtins.history import History
 from .builtins.jobs import Jobs
 from .consts import APPEND_MODE, NEW_LINE, WRITE_MODE
@@ -15,7 +16,7 @@ BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs", "com
 class CommandExecutor:
     """Dispatches shell commands to their handlers."""
 
-    def __init__(self, history: History, readline, jobs: Jobs, complete: Complete):
+    def __init__(self, history: History, readline, jobs: Jobs, complete: Complete, declare: Declare):
         self._handlers = {
             "echo": self._cmd_echo,
             "type": self._cmd_type,
@@ -31,6 +32,7 @@ class CommandExecutor:
         self._jobs = jobs
         self._readline = readline
         self._complete = complete
+        self._declare = declare
 
     def execute(self, parsed: InputParseResult) -> None:
         """Execute a command from a parsed input result."""
@@ -129,9 +131,18 @@ class CommandExecutor:
 
     def _cmd_declare(self, p: InputParseResult):
         if len(p.args) == 2 and p.args[0] == '-p':
-            print(f"declare: {p.args[1]}: not found")
-
-
+            item = self._declare.get_item(p.args[1])
+            if item is not None:
+                print(f'declare -- {p.args[1]}="{item}"')
+            else:
+                print(f"declare: {p.args[1]}: not found")
+        if len(p.args) == 1 and '=' in p.args[0]:
+            key_value_pair = p.args[0].split("=")
+            key = key_value_pair[0]
+            value = key_value_pair[1]
+            if key != '' and value != '':
+                self._declare.add_item(key, value)
+                
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
 

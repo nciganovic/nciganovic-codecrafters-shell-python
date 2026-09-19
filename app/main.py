@@ -1,6 +1,7 @@
 import readline
 
 from .builtins.complete import Complete
+from .builtins.declare import Declare
 from .builtins.history import History
 from .builtins.jobs import Jobs
 from .commands import CommandExecutor
@@ -16,9 +17,10 @@ def main():
     history = History()
     jobs = Jobs()
     complete = Complete()
+    declare = Declare()
 
     readline.set_completer(make_completer(complete))
-    executor = CommandExecutor(history, readline, jobs, complete)
+    executor = CommandExecutor(history, readline, jobs, complete, declare)
 
     while True:
         try:
