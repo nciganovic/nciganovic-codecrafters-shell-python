@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import re
 from pathlib import Path
 
 from .builtins.complete import Complete
@@ -140,6 +141,11 @@ class CommandExecutor:
             key_value_pair = p.args[0].split("=")
             key = key_value_pair[0]
             value = key_value_pair[1]
+
+            pat = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+            if not re.fullmatch(pat, key):
+                print(f"declare: `{key}={value}': not a valid identifier")
+
             if key != '' and value != '':
                 self._declare.add_item(key, value)
                 
