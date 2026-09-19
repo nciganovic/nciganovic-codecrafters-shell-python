@@ -66,12 +66,14 @@ class History:
 
     def  _get_history_env_file(self):
         env = os.environ.copy()
-        return env["HISTFILE"] if "HISTFILE" in env else None        
+        return env.get("HISTFILE", None)        
 
     def load_from_env_file(self):
         file = self._get_history_env_file()
-        self.read_from_file(file)
+        if file is not None:
+            self.read_from_file(file)
 
     def write_to_env_file(self):
         file = self._get_history_env_file()
-        self.write_to_file(file, False)
+        if file is not None:
+            self.write_to_file(file, False)

@@ -9,7 +9,7 @@ from .builtins.jobs import Jobs
 from .consts import APPEND_MODE, NEW_LINE, WRITE_MODE
 from .parser import InputParseResult
 
-BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs", "complete"}
+BUILTIN_COMMANDS = {"echo", "exit", "type", "pwd", "cd", "history", "jobs", "complete", "declare"}
 
 
 class CommandExecutor:
@@ -25,6 +25,7 @@ class CommandExecutor:
             "history": self._cmd_history,
             "jobs": self._cmd_jobs,
             "complete": self._cmd_complete,
+            "declare": self._cmd_declare
         }
         self._history = history
         self._jobs = jobs
@@ -126,6 +127,9 @@ class CommandExecutor:
         if len(p.args) == 3 and p.args[0] == '-C':
             self._complete.add_item(p.args[1], p.args[2])
 
+    def _cmd_declare(self, p: InputParseResult):
+        pass
+
     def _execute_external(self, p: InputParseResult):
         full_args = [p.command] + p.args
 
@@ -205,6 +209,8 @@ class CommandExecutor:
 
     def _get_execute_path(self, arg: str) -> str | None:
         PATH = os.environ.get("PATH")
+        if PATH is None:
+            return None
         all_paths = PATH.split(os.pathsep)
         for path in all_paths:
             full_path = path + "/" + arg
