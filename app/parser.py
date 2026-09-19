@@ -81,13 +81,15 @@ class InputParser:
                     current_arg += char
                 elif current_arg != EMPTY:
                     current_arg = self._convert_to_declare_variable(current_arg)
-                    total_args.append(current_arg)
+                    if current_arg != '':
+                        total_args.append(current_arg)
                     current_arg = EMPTY
             else:
                 current_arg += char
 
         current_arg = self._convert_to_declare_variable(current_arg)
-        total_args.append(current_arg)
+        if current_arg != '':
+            total_args.append(current_arg)
 
         return total_args
 
