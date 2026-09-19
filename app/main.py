@@ -31,7 +31,7 @@ def main():
             continue
 
         history.add_item(user_input_str)
-        parse_result = InputParser(user_input_str).parse()
+        parse_result = InputParser(user_input_str, declare).parse()
         executor.execute(parse_result)
 
 

@@ -1,7 +1,7 @@
 import os
+import re
 import subprocess
 import sys
-import re
 from pathlib import Path
 
 from .builtins.complete import Complete
